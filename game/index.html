@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SOLMARA — an open-world crime story</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #0b1026; }
+  #game { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+  #status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+  #hud { position: fixed; inset: 0; pointer-events: none; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; color: #f2ede2; z-index: 5; }
+  #hud button { pointer-events: auto; cursor: pointer; }
+
+  #hud-top-left { position: absolute; top: 16px; left: 16px; }
+  #hud-cash { font-size: 30px; font-weight: 800; color: #7ee787; text-shadow: 0 2px 6px rgba(0,0,0,.8); }
+  #hud-health { width: 200px; height: 16px; margin-top: 6px; background: rgba(0,0,0,.55); border: 1px solid rgba(255,255,255,.35); border-radius: 3px; position: relative; }
+  #hud-health-fill { height: 100%; width: 100%; background: #3fae6a; border-radius: 2px; }
+  #hud-health-text { position: absolute; right: 6px; top: -1px; font-size: 11px; font-weight: 700; }
+  #hud-ammo { margin-top: 5px; font-size: 12px; letter-spacing: 1px; color: #e8e0cc; text-shadow: 0 1px 4px #000; }
+
+  #hud-top-right { position: absolute; top: 16px; right: 16px; text-align: right; }
+  #hud-stars { font-size: 26px; letter-spacing: 2px; }
+  .hud-star { color: rgba(255,255,255,.25); text-shadow: 0 2px 6px #000; }
+  .hud-star.on { color: #ffc93c; }
+  #hud-clock { margin-top: 4px; font-size: 13px; font-weight: 700; letter-spacing: 1px; text-shadow: 0 1px 4px #000; }
+
+  #hud-objective { position: absolute; left: 16px; bottom: 216px; max-width: 380px; background: rgba(0,0,0,.5); border-left: 4px solid #ffc93c; padding: 10px 12px; border-radius: 3px; }
+  #hud-mission-title { font-size: 13px; font-weight: 800; letter-spacing: 2px; color: #ffc93c; }
+  #hud-mission-text { font-size: 15px; margin-top: 3px; line-height: 1.35; }
+  #hud-mission-sub { font-size: 12px; margin-top: 3px; color: #ff9a7a; font-weight: 700; letter-spacing: 1px; }
+
+  #hud-toast { position: absolute; left: 50%; bottom: 120px; transform: translateX(-50%); background: rgba(0,0,0,.65); padding: 9px 18px; border-radius: 4px; font-size: 15px; opacity: 0; transition: opacity .3s; white-space: nowrap; max-width: 90vw; overflow: hidden; text-overflow: ellipsis; }
+  #hud-toast.show { opacity: 1; }
+
+  #hud-banner { position: absolute; left: 50%; top: 22%; transform: translateX(-50%); text-align: center; opacity: 0; transition: opacity .4s; }
+  #hud-banner.show { opacity: 1; }
+  .hud-banner-title { font-size: 44px; font-weight: 900; letter-spacing: 4px; color: #ffc93c; text-shadow: 0 3px 12px #000; }
+  .hud-banner-sub { font-size: 16px; margin-top: 6px; text-shadow: 0 2px 8px #000; }
+
+  #hud-speed { position: absolute; right: 20px; bottom: 216px; text-align: right; display: none; text-shadow: 0 2px 8px #000; }
+  #hud-speed-num { font-size: 44px; font-weight: 900; }
+  #hud-speed-unit { font-size: 13px; margin-left: 4px; letter-spacing: 2px; }
+
+  #hud-prompt { position: absolute; left: 50%; bottom: 84px; transform: translateX(-50%); font-size: 15px; font-weight: 700; text-shadow: 0 2px 6px #000; background: rgba(0,0,0,.45); padding: 6px 14px; border-radius: 4px; }
+  #hud-prompt:empty { display: none; }
+
+  #hud-crosshair { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); font-size: 22px; font-weight: 700; color: rgba(255,255,255,.9); text-shadow: 0 0 6px #000; display: none; }
+
+  #hud-minimap { position: absolute; left: 16px; bottom: 16px; width: 190px; height: 190px; border: 2px solid rgba(255,255,255,.5); border-radius: 50%; background: #20242a; box-shadow: 0 4px 18px rgba(0,0,0,.6); }
+
+  .hud-menu { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: linear-gradient(rgba(8,12,22,.35), rgba(8,12,22,.68)); pointer-events: auto; }
+  .hud-hidden { display: none !important; }
+  .hud-menu-inner { text-align: center; max-width: 640px; padding: 24px; }
+  .hud-kicker { font-size: 13px; letter-spacing: 4px; font-weight: 800; color: #ffc93c; }
+  .hud-menu h1 { font-size: 84px; margin: 8px 0 4px; letter-spacing: 10px; font-weight: 900; color: #fff; text-shadow: 0 4px 0 #e8533f, 0 8px 30px rgba(0,0,0,.8); }
+  .hud-menu h2 { font-size: 52px; margin: 8px 0; letter-spacing: 6px; font-weight: 900; text-shadow: 0 4px 24px #000; }
+  .hud-story { font-size: 17px; line-height: 1.55; color: #e8e0cc; }
+  .hud-controls { font-size: 14px; line-height: 1.7; color: #b9c0c8; margin: 18px 0; }
+  .hud-menu button { display: block; margin: 10px auto; min-width: 280px; padding: 14px 28px; font-size: 17px; font-weight: 800; letter-spacing: 2px; color: #111; background: #ffc93c; border: none; border-radius: 4px; }
+  .hud-menu button:hover { background: #ffd75e; }
+  .hud-menu button.hud-secondary { background: transparent; color: #f2ede2; border: 1px solid rgba(255,255,255,.5); }
+  .hud-foot { margin-top: 20px; font-size: 12px; color: #8a929e; }
+
+  #hud.hud-in-menu #hud-top-left,
+  #hud.hud-in-menu #hud-top-right,
+  #hud.hud-in-menu #hud-objective,
+  #hud.hud-in-menu #hud-minimap,
+  #hud.hud-in-menu #hud-speed { display: none; }
+</style>
+<script type="importmap">
+{ "imports": { "three": "./vendor/three.module.min.js" } }
+</script>
+</head>
+<body>
+<canvas id="game" aria-label="Solmara: drive and walk through an open-world coastal city, take on missions, lose the police"></canvas>
+<p id="status" role="status" aria-live="polite"></p>
+<div id="hud"></div>
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>
